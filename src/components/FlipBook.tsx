@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import type { WordFamily, Word } from '../data/wordFamilies.ts'
 import { iconUrl } from '../openmoji.ts'
 import { useSpeech } from '../hooks/useSpeech.ts'
+import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon, SnailIcon, VolumeIcon } from './icons.tsx'
 
 const flipDuration = 520
 const comfortableLength = 5
@@ -108,7 +109,8 @@ export function FlipBook({ family, startIndex, onVisit, onExit }: FlipBookProps)
     <div className="flipbook" style={{ ['--family-color' as string]: color }}>
       <header className="flipbook__bar">
         <button className="chip" onClick={onExit}>
-          ← группы
+          <ArrowLeftIcon />
+          группы
         </button>
         <span className="chip chip--muted">
           {index + 1} / {words.length}
@@ -157,7 +159,7 @@ export function FlipBook({ family, startIndex, onVisit, onExit }: FlipBookProps)
 
       {words[index].example && (
         <button className="example" onClick={() => speak(words[index].example!)}>
-          <SpeakerIcon />
+          <VolumeIcon />
           <span className="example__text">
             <span className="example__en">{words[index].example}</span>
             <span className="example__ru">{words[index].exampleRu}</span>
@@ -167,20 +169,20 @@ export function FlipBook({ family, startIndex, onVisit, onExit }: FlipBookProps)
 
       <footer className="flipbook__controls">
         <button className="round" onClick={() => turn('back')} disabled={index === 0} aria-label="Назад">
-          ‹
+          <ChevronLeftIcon />
         </button>
         {supported && (
           <>
             <button className="round round--speak" onClick={() => speak(word)} aria-label="Произнести">
-              <SpeakerIcon />
+              <VolumeIcon />
             </button>
             <button className="round" onClick={() => speak(word, slowRate)} aria-label="Произнести медленно">
-              🐢
+              <SnailIcon />
             </button>
           </>
         )}
         <button className="round" onClick={() => turn('forward')} aria-label="Вперёд">
-          ›
+          <ChevronRightIcon />
         </button>
       </footer>
     </div>
@@ -262,11 +264,3 @@ function Leaf({ word, fixed }: { word: Word; fixed: string }) {
   )
 }
 
-function SpeakerIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="round__icon" aria-hidden="true">
-      <path d="M4 9.5h3.2L12 5.2v13.6L7.2 14.5H4z" fill="currentColor" />
-      <path d="M15.4 8.8a4.4 4.4 0 0 1 0 6.4M18 6a8 8 0 0 1 0 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  )
-}

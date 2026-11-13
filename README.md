@@ -79,4 +79,6 @@ npm run icons
 
 Скрипт берёт эмодзи из данных и кладёт соответствующие SVG из
 [OpenMoji](https://openmoji.org) (CC BY-SA 4.0) в `public/icons/`.
+Иконки интерфейса (динамик, стрелки, улитка) — [Tabler Icons](https://tabler.io/icons)
+(MIT), их контуры вшиты в `src/components/icons.tsx`.
 Если для эмодзи картинки нет, он напишет, для какого слова её не хватило.

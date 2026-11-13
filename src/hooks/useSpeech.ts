@@ -1,47 +1,21 @@
-import { useCallback, useEffect, useState } from 'react'
-
-const preferredVoices = ['Samantha', 'Karen', 'Daniel', 'Google US English', 'Microsoft Aria Online (Natural) - English (United States)']
+import { useCallback } from 'react'
 
 export function useSpeech() {
-  const voice = useEnglishVoice()
   const supported = 'speechSynthesis' in window
 
+  // голос намеренно не выбирается: браузер берёт системный для en-US, поэтому он один и тот же
+  // и при входе в группу, и при листании — со своим выбором первое слово успевало прозвучать другим
   const speak = useCallback(
     (text: string, rate = 0.9) => {
       if (!supported) return
       speechSynthesis.cancel()
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.rate = rate
-      utterance.lang = voice?.lang ?? 'en-US'
-      if (voice) utterance.voice = voice
+      utterance.lang = 'en-US'
       speechSynthesis.speak(utterance)
     },
-    [voice, supported],
+    [supported],
   )
 
   return { speak, supported }
-}
-
-function useEnglishVoice() {
-  const [voice, setVoice] = useState<SpeechSynthesisVoice>()
-
-  useEffect(() => {
-    if (!('speechSynthesis' in window)) return
-
-    const pickVoice = () => {
-      const english = speechSynthesis.getVoices().filter((candidate) => candidate.lang.startsWith('en'))
-      if (!english.length) return
-      setVoice(
-        english.find((candidate) => preferredVoices.includes(candidate.name)) ??
-          english.find((candidate) => candidate.lang === 'en-US') ??
-          english[0],
-      )
-    }
-
-    pickVoice()
-    speechSynthesis.addEventListener('voiceschanged', pickVoice)
-    return () => speechSynthesis.removeEventListener('voiceschanged', pickVoice)
-  }, [])
-
-  return voice
 }
