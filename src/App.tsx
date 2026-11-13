@@ -1,16 +1,21 @@
 import { useCallback, useEffect, useState } from 'react'
-import { familySections, wordFamilies, type WordFamily } from './data/wordFamilies.ts'
+import { decks, wordFamilies, type WordFamily } from './data/wordFamilies.ts'
 import { useProgress, type Progress } from './hooks/useProgress.ts'
 import { FamilyPicker } from './components/FamilyPicker.tsx'
 import { FlipBook } from './components/FlipBook.tsx'
 
 export function App() {
   const [family, setFamily] = useState<WordFamily | undefined>(familyFromHash)
-  const { progress, visit } = useProgress()
+  const [deckId, setDeckId] = useState(() => deckOf(familyFromHash()))
+  const { progress, visit, reset } = useProgress()
   const familyId = family?.id
 
   useEffect(() => {
-    const onHashChange = () => setFamily(familyFromHash())
+    const onHashChange = () => {
+      const opened = familyFromHash()
+      setFamily(opened)
+      if (opened) setDeckId(deckOf(opened))
+    }
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
@@ -31,7 +36,16 @@ export function App() {
   )
 
   if (!family) {
-    return <FamilyPicker sections={familySections} onPick={(picked) => (location.hash = picked.id)} />
+    return (
+      <FamilyPicker
+        decks={decks}
+        deckId={deckId}
+        progress={progress}
+        onDeck={setDeckId}
+        onPick={(picked) => (location.hash = picked.id)}
+        onReset={reset}
+      />
+    )
   }
 
   return (
@@ -48,6 +62,14 @@ export function App() {
 function familyFromHash() {
   const id = decodeURIComponent(location.hash.slice(1))
   return wordFamilies.find((family) => family.id === id)
+}
+
+function deckOf(family: WordFamily | undefined) {
+  if (!family) return decks[0].id
+  const owner = decks.find((deck) =>
+    deck.sections.some((section) => section.families.includes(family)),
+  )
+  return (owner ?? decks[0]).id
 }
 
 function startIndex(family: WordFamily, progress: Progress) {

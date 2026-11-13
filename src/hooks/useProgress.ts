@@ -7,36 +7,56 @@ export interface FamilyProgress {
 
 export type Progress = Record<string, FamilyProgress>
 
+interface StoredProgress {
+  day: string
+  families: Progress
+}
+
 const storageKey = 'english-cards-progress'
 
 export function useProgress() {
-  const [progress, setProgress] = useState<Progress>(readProgress)
+  const [stored, setStored] = useState<StoredProgress>(readProgress)
 
   useEffect(() => {
     try {
-      localStorage.setItem(storageKey, JSON.stringify(progress))
+      localStorage.setItem(storageKey, JSON.stringify(stored))
     } catch {
       /* приватный режим или переполненное хранилище — прогресс просто не переживёт перезагрузку */
     }
-  }, [progress])
+  }, [stored])
 
-  const visit = useCallback((rime: string, index: number) => {
-    setProgress((current) => {
-      const family = current[rime] ?? { index: 0, seen: [] }
-      if (family.index === index && family.seen.includes(index)) return current
+  const visit = useCallback((id: string, index: number) => {
+    const day = currentDay()
+    setStored((current) => {
+      const families = current.day === day ? current.families : {}
+      const family = families[id] ?? { index: 0, seen: [] }
+      const alreadyThere = family.index === index && family.seen.includes(index)
+      if (alreadyThere && current.day === day) return current
+
       const seen = family.seen.includes(index) ? family.seen : [...family.seen, index]
-      return { ...current, [rime]: { index, seen } }
+      return { day, families: { ...families, [id]: { index, seen } } }
     })
   }, [])
 
-  return { progress, visit }
+  const reset = useCallback(() => setStored({ day: currentDay(), families: {} }), [])
+
+  return { progress: stored.families, visit, reset }
 }
 
-function readProgress(): Progress {
+function readProgress(): StoredProgress {
+  const empty = { day: currentDay(), families: {} }
   try {
-    const stored = localStorage.getItem(storageKey)
-    return stored ? (JSON.parse(stored) as Progress) : {}
+    const raw = localStorage.getItem(storageKey)
+    if (!raw) return empty
+    const parsed = JSON.parse(raw) as StoredProgress
+    return parsed.day === currentDay() ? parsed : empty
   } catch {
-    return {}
+    return empty
   }
+}
+
+// день берётся по местному времени: с UTC вечерние занятия попадали бы в следующие сутки
+function currentDay() {
+  const now = new Date()
+  return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
 }

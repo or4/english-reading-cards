@@ -28,7 +28,7 @@ export function FlipBook({ family, startIndex, onVisit, onExit }: FlipBookProps)
   const [finished, setFinished] = useState(false)
   const { speak, supported } = useSpeech()
   const word = wordText(family, words[index])
-  const glyph = glyphScale(words, fixed)
+  const whole = !fixed
 
   useEffect(() => onVisit(index), [index, onVisit])
 
@@ -85,10 +85,10 @@ export function FlipBook({ family, startIndex, onVisit, onExit }: FlipBookProps)
 
   const flipHalf = (
     <div className="book__flip">
-      <Leaf word={under} glyph={glyph} />
+      <Leaf word={under} fixed={fixed} />
       {flip && (
         <div className={`leaf leaf--${flip.direction}`}>
-          <Leaf word={flip.top} glyph={glyph} />
+          <Leaf word={flip.top} fixed={fixed} />
           <div className="leaf__back" />
         </div>
       )}
@@ -98,7 +98,7 @@ export function FlipBook({ family, startIndex, onVisit, onExit }: FlipBookProps)
 
   const fixedHalf = (
     <div className="book__fixed">
-      <span className="book__glyph" style={glyph}>
+      <span className="book__glyph" style={glyphScale(words[index].part, fixed)}>
         {fixed}
       </span>
     </div>
@@ -116,13 +116,15 @@ export function FlipBook({ family, startIndex, onVisit, onExit }: FlipBookProps)
       </header>
 
       <div
-        className={`book book--${side}`}
+        className={`book book--${whole ? 'whole' : side}`}
         onClick={() => turn('forward')}
         role="button"
         tabIndex={0}
         aria-label={`${word}, нажми чтобы перевернуть`}
       >
-        {side === 'end' ? (
+        {whole ? (
+          flipHalf
+        ) : side === 'end' ? (
           <>
             {flipHalf}
             {fixedHalf}
@@ -136,7 +138,9 @@ export function FlipBook({ family, startIndex, onVisit, onExit }: FlipBookProps)
       </div>
 
       <div className="flipbook__word" aria-live="polite">
-        {side === 'end' ? (
+        {whole ? (
+          words[index].part
+        ) : side === 'end' ? (
           <>
             {words[index].part}
             <span className="flipbook__fixed">{fixed}</span>
@@ -148,6 +152,18 @@ export function FlipBook({ family, startIndex, onVisit, onExit }: FlipBookProps)
           </>
         )}
       </div>
+
+      <div className="flipbook__ru">{words[index].ru}</div>
+
+      {words[index].example && (
+        <button className="example" onClick={() => speak(words[index].example!)}>
+          <SpeakerIcon />
+          <span className="example__text">
+            <span className="example__en">{words[index].example}</span>
+            <span className="example__ru">{words[index].exampleRu}</span>
+          </span>
+        </button>
+      )}
 
       <footer className="flipbook__controls">
         <button className="round" onClick={() => turn('back')} disabled={index === 0} aria-label="Назад">
@@ -175,10 +191,9 @@ export function wordText(family: WordFamily, word: Word) {
   return family.side === 'end' ? `${word.part}${family.fixed}` : `${family.fixed}${word.part}`
 }
 
-// размер букв берётся по самому длинному слову группы, иначе неподвижная половина прыгала бы при перевороте
-function glyphScale(words: Word[], fixed: string): CSSProperties {
-  const longest = Math.max(...words.map((word) => word.part.length)) + fixed.length
-  return { ['--glyph-scale' as string]: Math.min(1, comfortableLength / longest) }
+// обе половины слова масштабируются одинаково, иначе у «string» буквы «str» и «ing» были бы разного роста
+function glyphScale(part: string, fixed: string): CSSProperties {
+  return { ['--glyph-scale' as string]: Math.min(1, comfortableLength / (part.length + fixed.length)) }
 }
 
 function Finished({ family, onExit }: { family: WordFamily; onExit: () => void }) {
@@ -232,7 +247,7 @@ function Confetti() {
   )
 }
 
-function Leaf({ word, glyph }: { word: Word; glyph: CSSProperties }) {
+function Leaf({ word, fixed }: { word: Word; fixed: string }) {
   return (
     <div className="leaf__face">
       {word.emoji ? (
@@ -240,7 +255,7 @@ function Leaf({ word, glyph }: { word: Word; glyph: CSSProperties }) {
       ) : (
         <span className="leaf__icon" />
       )}
-      <span className="book__glyph" style={glyph}>
+      <span className="book__glyph" style={glyphScale(word.part, fixed)}>
         {word.part}
       </span>
     </div>
